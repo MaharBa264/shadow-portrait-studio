@@ -4,11 +4,15 @@ Open-source, browser-based experimental tool to turn images into shadow sculptur
 
 ## Status
 
-**v0.1 prototype:** image upload, grayscale/threshold preview, mode selector (line/volume), configuration export. STL generation and physically accurate shadow simulation are **not implemented yet**.
+**v0.2 prototype:** image upload, grayscale/threshold preview, mode selector (line/volume), configuration export. The v0.2 reference projection uses an **ideal opaque flat mask** and a calibrated point source; it is not a sculpture preview. STL generation, 3D geometry, real finite-emitter shadows, and physical print validation are **not implemented yet**.
 
 ## Run locally
 
 Open `index.html` in a modern browser, or serve the folder using any static HTTP server.
+
+## Tests
+
+Run `npm test` with Node.js 20+ to check the projection mathematics. (No build or dependencies required.)
 
 ## Modes (planned)
 
