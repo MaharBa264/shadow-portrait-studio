@@ -1,3 +1,5 @@
+import { createConnectedPaths } from './connected-paths.js';
+import { voxelizeNetwork,validateSurface,meshToAsciiStl } from './voxel-mesh.js';
 import { generateLineBars, projectBars, barsToAsciiStl } from './generator-lines.js';
 import { renderFlatMaskShadow, shadowScale } from './optics.js';
 const $ = (id) => document.getElementById(id);
@@ -9,6 +11,8 @@ const projectionCtx = $('projection').getContext('2d');
 let sourceData = null;
 let originalName = null;
 let generatedBars = null;
+let connectedNetwork=null;
+let fusedMesh=null;
 const geometryCtx = $('geometry').getContext('2d');
 const castCtx = $('cast').getContext('2d');
 const size = 420;
@@ -18,7 +22,7 @@ function sceneSettings(){
  return {lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),receiverSizeMm:180};
 }
 function invalidateGeometry(){
- generatedBars=null;$('stl').disabled=true;
+ generatedBars=null;connectedNetwork=null;fusedMesh=null;$('stl').disabled=true;$('mergeMesh').disabled=true;$('mergedStl').disabled=true;$('meshReport').textContent='Generá nuevos filamentos antes de fusionar la malla.';
  emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');
  $('geometryInfo').textContent='Generá de nuevo para actualizar la geometría.';
 }
@@ -82,10 +86,35 @@ $('generate').addEventListener('click',()=>{
  try{
   const data=targetCtx.getImageData(0,0,size,size);
   generatedBars=generateLineBars(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:20});
+  connectedNetwork=createConnectedPaths(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:20});
   drawBars(generatedBars);
   $('stl').disabled=generatedBars.length===0;
+  $('mergeMesh').disabled=!connectedNetwork.bars.length;
   $('status').textContent=generatedBars.length+' barras 3D calculadas. Modelo experimental, no conectado ni validado para impresión.';
  }catch(error){invalidateGeometry();$('status').textContent='Error de generación: '+error.message;}
+});
+$('voxel').addEventListener('input',()=>{ $('voxelValue').value=$('voxel').value;fusedMesh=null;$('mergedStl').disabled=true;});
+$('mergeMesh').addEventListener('click',()=>{
+ if(!connectedNetwork?.bars.length)return;
+ try {
+  $('meshReport').textContent='Calculando unión de vóxeles…';
+  // Yield a frame before an expensive synchronous prototype step.
+  requestAnimationFrame(()=>setTimeout(()=>{
+   try{
+    const mesh=voxelizeNetwork(connectedNetwork,{resolutionMm:Number($('voxel').value)});
+    const check=validateSurface(mesh);
+    fusedMesh=mesh;
+    $('mergedStl').disabled=!(check.watertight&&mesh.stats.components===1);
+    $('meshReport').textContent='Componentes sólidos: '+mesh.stats.components+' · Triángulos: '+mesh.stats.triangles+' · Superficie cerrada: '+(check.watertight?'sí':'no')+' · Bordes problemáticos: '+check.nonManifoldEdges+'. Validación de impresión pendiente.';
+   }catch(error){fusedMesh=null;$('mergedStl').disabled=true;$('meshReport').textContent='No se pudo fusionar: '+error.message;}
+  },0));
+ }catch(error){$('meshReport').textContent=error.message;}
+});
+$('mergedStl').addEventListener('click',()=>{
+ if(!fusedMesh)return;
+ const blob=new Blob([meshToAsciiStl(fusedMesh)],{type:'model/stl'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='shadow-portrait-v04-voxel-EXPERIMENTAL.stl';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 $('stl').addEventListener('click',()=>{
  if(!generatedBars?.length)return;
