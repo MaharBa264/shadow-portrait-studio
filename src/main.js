@@ -1,4 +1,4 @@
-import {defaultScene,validScene,drawScene,dragScene,hitScene} from './scene-editor.js';
+import {defaultScene,validScene,drawScene,dragScene,hitScene,shadowFootprint} from './scene-editor.js';
 import { generateLineBars, projectBars, barsToAsciiStl } from './generator-lines.js';
 import { renderFlatMaskShadow, shadowScale } from './optics.js';
 const $ = (id) => document.getElementById(id);
@@ -20,7 +20,8 @@ function paintScene(){
  const s=readScene(); if(!validScene(s)){ $('sceneInfo').textContent='Escena fuera de límites';return;}
  drawScene(sceneCtx,s);
  for(const id of ['lightZ','objectZ','lightX','objectX'])$(id+'Value').value=$(id).value;
- $('sceneInfo').textContent='Luz-pared: '+s.lightZ+' mm · Pieza-pared: '+s.objectZ+' mm · Luz-pieza: '+(s.lightZ-s.objectZ)+' mm · Desplazamiento lateral: '+s.objectX+' mm.';
+ const foot=shadowFootprint(s);
+ $('sceneInfo').textContent='Luz-pared: '+s.lightZ+' mm · Pieza-pared: '+s.objectZ+' mm · Luz-pieza: '+(s.lightZ-s.objectZ)+' mm · Sombra estimada: '+foot.widthMm.toFixed(1)+' mm · Centro: '+foot.centerMm.toFixed(1)+' mm · '+(foot.insideReceiver?'Dentro del receptor':'Fuera de los límites del receptor')+'.';
 }
 let dragged=null;
 function pointerPos(event){const rect=sceneCanvas.getBoundingClientRect();return {x:(event.clientX-rect.left)*sceneCanvas.width/rect.width,y:(event.clientY-rect.top)*sceneCanvas.height/rect.height};}
