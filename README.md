@@ -4,7 +4,7 @@ Open-source, browser-based experimental tool to turn images into shadow sculptur
 
 ## Status
 
-**v0.2 prototype:** image upload, grayscale/threshold preview, mode selector (line/volume), configuration export. The v0.2 reference projection uses an **ideal opaque flat mask** and a calibrated point source; it is not a sculpture preview. STL generation, 3D geometry, real finite-emitter shadows, and physical print validation are **not implemented yet**.
+**v0.3 experimental prototype:** image upload, grayscale/threshold preview, mode selector (line/volume), configuration export. The v0.2 reference projection uses an **ideal opaque flat mask** and a calibrated point source; it is not a sculpture preview. An experimental inverse-projected 3D scanline filament generator and ASCII STL export are now available. **Its bars are disconnected: STLs are NOT print-ready.** Connected geometry, physically realistic finite-emitter shadows, and physical print validation are still pending.
 
 ## Run locally
 
