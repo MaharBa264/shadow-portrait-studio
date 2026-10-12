@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {defaultScene,validScene,sceneGeometry,dragScene,hitScene} from '../src/scene-editor.js';
+import {defaultScene,validScene,sceneGeometry,dragScene,hitScene,shadowFootprint} from '../src/scene-editor.js';
 import {renderFlatMaskShadow} from '../src/optics.js';
 
 test('escena inicial válida y geometría ordenada',()=>{
@@ -25,4 +25,24 @@ test('objeto desplazado altera máscara proyectada',()=>{
  const first=renderFlatMaskShadow(px,4,4,scene,40);
  const moved=renderFlatMaskShadow(px,4,4,{...scene,objectX:35},40);
  assert.notDeepEqual(first,moved);
+});
+
+test('la sombra proyectada mide 240 mm con factor 1.5',()=>{
+ const s=defaultScene(),p=shadowFootprint(s);
+ assert.equal(p.scale,1.5);
+ assert.equal(p.widthMm,240);
+ assert.equal(p.centerMm,0);
+ assert.equal(p.insideReceiver,true);
+});
+test('el desplazamiento lateral mueve la sombra sin cambiar su ancho',()=>{
+ const a=shadowFootprint(defaultScene());
+ const b=shadowFootprint({...defaultScene(),objectX:50});
+ assert.equal(b.widthMm,a.widthMm);
+ assert.equal(b.centerMm,75);
+ assert.equal(b.insideReceiver,false);
+});
+test('distancia de luz cambia tamaño estimado',()=>{
+ const near=shadowFootprint({...defaultScene(),lightZ:200});
+ const far=shadowFootprint({...defaultScene(),lightZ:700});
+ assert.ok(near.widthMm>far.widthMm);
 });
