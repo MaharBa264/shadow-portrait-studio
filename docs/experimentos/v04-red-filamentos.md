@@ -54,3 +54,13 @@ Proyectar juntas barras y puentes para medir cuánto error produce la columna ex
 **Límites:** el visor ordena caras por profundidad media (no tiene z-buffer preciso), no usa Three.js, puede mostrar artefactos de oclusión y puede consumir bastante CPU. La sombra es geométrica sin penumbra, sin iluminación extendida y sin análisis de estabilidad ni resistencia. No se ha hecho calibración física. El modo desarrollo todavía no se ha publicado en producción.
 
 **Próxima tarea bloqueante:** probar CI/preview de la rama, corregir cualquier fallo, mover cálculos pesados a Worker, validar que proyección y geometría usen el mismo tamaño de receptor, optimizar el anclaje lateral y crear una base verificable antes de considerar terminada v0.4.
+
+## Corrección de referencia óptica y pruebas pendientes (11/10/2026)
+
+Se detectó un sesgo conceptual en la comparación anterior: la proyección del sólido ocupaba un receptor visible de 300 mm, mientras la máscara ideal se calculaba como una placa de 160 mm a profundidad intermedia, ampliada según la posición de la luz. Como los filamentos v0.3 se generaron inversamente para una **sombra objetivo de 180 mm en el receptor**, comparar con aquella placa daba una puntuación no comparable.
+
+**Corrección incorporada en la rama:** `drawTargetOnReceiver` coloca la imagen objetivo directamente en el plano receptor, centrada y con tamaño físico de 180 mm sobre un cuadro de 300 mm. La métrica IoU ahora compara la sombra de los triángulos contra esa referencia, con el mismo sistema de coordenadas. Se añadieron tests de escala y parámetros inválidos.
+
+La corrección es una decisión óptica explícita: la referencia de 180 mm corresponde a la sombra final, **no** a una máscara real ubicada en el objeto. No resuelve el problema de estetizar la escultura ni de verificar físicamente la iluminación.
+
+**Pendiente de verificación:** ejecutar CI en la rama y pruebas de navegador para confirmar el cambio. No se declara aprobado por el mero commit. Continuar con render acelerado/Worker, suavizado de malla, base y evaluación de manufacturabilidad.
