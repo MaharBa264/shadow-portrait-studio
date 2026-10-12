@@ -1,3 +1,7 @@
+import {paintProjectedSegments,scoreMasks,diagnoseStages} from './optical-bench.js';
+import {drawMeshOrbit,drawMeshShadow,compareCanvasMasks,drawTargetOnReceiver} from './mesh-view.js';
+import { createConnectedPaths } from './connected-paths.js';
+import { voxelizeNetwork,validateSurface,meshToAsciiStl } from './voxel-mesh.js';
 import { generateLineBars, projectBars, barsToAsciiStl } from './generator-lines.js';
 import { renderFlatMaskShadow, shadowScale } from './optics.js';
 const $ = (id) => document.getElementById(id);
@@ -9,18 +13,53 @@ const projectionCtx = $('projection').getContext('2d');
 let sourceData = null;
 let originalName = null;
 let generatedBars = null;
+let connectedNetwork=null;
+let fusedMesh=null;
+let meshValidation=null;
+let opticalAcceptable=false;
+let orbitYaw=.7,orbitPitch=.35;
+const solidCtx=$('solidView').getContext('2d'),solidShadowCtx=$('solidShadow').getContext('2d');
 const geometryCtx = $('geometry').getContext('2d');
 const castCtx = $('cast').getContext('2d');
 const size = 420;
+const receiverReference=document.createElement('canvas');receiverReference.width=receiverReference.height=size;
+const receiverReferenceCtx=receiverReference.getContext('2d');
+const benchIds=['benchTarget','benchBars','benchLinks','benchSolid'];
+const benchCtx=benchIds.map(id=>$(id).getContext('2d',{willReadFrequently:true}));
+function clearBench(){
+ for(const ctx of benchCtx){ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);}
+ for(const id of ['benchBarsScore','benchLinksScore','benchSolidScore'])$(id).textContent='Sin calcular';
+ $('benchDiagnosis').textContent='Generá filamentos para diagnosticar.';
+}
+function sceneBench(){
+ return {lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),receiverSizeMm:300};
+}
+function updateBench(){
+ if(!generatedBars||!connectedNetwork)return;
+ drawTargetOnReceiver(benchCtx[0],target,{targetSizeMm:180,receiverSizeMm:300});
+ paintProjectedSegments(benchCtx[1],generatedBars,sceneBench());
+ paintProjectedSegments(benchCtx[2],[...connectedNetwork.bars,...connectedNetwork.bridges],sceneBench());
+ if(fusedMesh)drawMeshShadow(benchCtx[3],fusedMesh,sceneBench());
+ else {benchCtx[3].fillStyle='#fff';benchCtx[3].fillRect(0,0,size,size);}
+ const {results,firstLoss,largestLoss,maxDrop}=diagnoseStages([benchCtx[0],benchCtx[1],benchCtx[2],fusedMesh?benchCtx[3]:null],benchCtx[0]);
+ for(const [index,id] of [[1,'benchBarsScore'],[2,'benchLinksScore'],[3,'benchSolidScore']]){
+  const val=results[index];$(id).textContent=val?'Coincidencia IoU '+(val.iou*100).toFixed(1)+' % · píxeles extra '+val.falsePositive+' · faltantes '+val.falseNegative:'Pendiente de fusionar malla';
+ }
+ const goodBaseline=results[1]?.iou>=0.7;
+ opticalAcceptable=!!(fusedMesh&&goodBaseline&&results[3]&&results[3].iou>=results[1].iou-0.08);
+ $('benchDiagnosis').textContent=largestLoss===null?'Sin etapas comparables.':('Mayor pérdida: etapa '+(largestLoss+1)+' ('+(maxDrop*100).toFixed(1)+' puntos).'+(firstLoss!==null?' Primera caída: etapa '+(firstLoss+1)+'.':'')+(opticalAcceptable?' Proyección experimental dentro de tolerancia.':' Fidelidad insuficiente: no exportar el sólido.'));
+
+}
+clearBench();
 function emptyCanvas(ctx,text){ctx.fillStyle='#eff2f6';ctx.fillRect(0,0,size,size);ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.font='16px system-ui';ctx.fillText(text,size/2,size/2);}
-emptyCanvas(originalCtx,'Cargá tu fotografía');emptyCanvas(targetCtx,'Esperando imagen');emptyCanvas(projectionCtx,'Esperando máscara');emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');
+emptyCanvas(originalCtx,'Cargá tu fotografía');emptyCanvas(targetCtx,'Esperando imagen');emptyCanvas(projectionCtx,'Esperando máscara');emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');emptyCanvas(solidCtx,'Fusioná la malla');emptyCanvas(solidShadowCtx,'Fusioná la malla');
 function sceneSettings(){
  return {lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),receiverSizeMm:180};
 }
 function invalidateGeometry(){
- generatedBars=null;$('stl').disabled=true;
- emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');
- $('geometryInfo').textContent='Generá de nuevo para actualizar la geometría.';
+ generatedBars=null;connectedNetwork=null;fusedMesh=null;meshValidation=null;opticalAcceptable=false;$('stl').disabled=true;$('mergeMesh').disabled=true;$('mergedStl').disabled=true;$('meshReport').textContent='Generá nuevos filamentos antes de fusionar la malla.';
+ emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');emptyCanvas(solidCtx,'Fusioná la malla');emptyCanvas(solidShadowCtx,'Fusioná la malla');$('comparison').textContent='Generá y fusioná una malla para comparar.';
+ $('geometryInfo').textContent='Generá de nuevo para actualizar la geometría.';clearBench();
 }
 function drawBars(bars){
  const sizeMm=180;
@@ -81,11 +120,53 @@ $('generate').addEventListener('click',()=>{
  if(document.querySelector('input[name=mode]:checked').value!=='lines'){$('status').textContent='El motor volumétrico todavía está pendiente. Seleccioná Filamentos.';return;}
  try{
   const data=targetCtx.getImageData(0,0,size,size);
-  generatedBars=generateLineBars(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:20});
-  drawBars(generatedBars);
+  generatedBars=generateLineBars(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:0});
+  connectedNetwork=createConnectedPaths(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:0});
+  drawBars(generatedBars);updateBench();
   $('stl').disabled=generatedBars.length===0;
+  $('mergeMesh').disabled=!connectedNetwork.bars.length;
   $('status').textContent=generatedBars.length+' barras 3D calculadas. Modelo experimental, no conectado ni validado para impresión.';
  }catch(error){invalidateGeometry();$('status').textContent='Error de generación: '+error.message;}
+});
+const viewCanvas=$('solidView');let pointer=null;
+viewCanvas.addEventListener('pointerdown',e=>{pointer={x:e.clientX,y:e.clientY};viewCanvas.setPointerCapture(e.pointerId);});
+viewCanvas.addEventListener('pointermove',e=>{
+ if(!pointer||!fusedMesh)return;
+ orbitYaw+=(e.clientX-pointer.x)*.012;
+ orbitPitch=Math.max(-1.4,Math.min(1.4,orbitPitch+(e.clientY-pointer.y)*.012));
+ pointer={x:e.clientX,y:e.clientY};
+ drawMeshOrbit(solidCtx,fusedMesh,{yaw:orbitYaw,pitch:orbitPitch});
+});
+for(const type of ['pointerup','pointercancel'])viewCanvas.addEventListener(type,()=>{pointer=null;});
+$('voxel').addEventListener('input',()=>{ $('voxelValue').value=$('voxel').value;fusedMesh=null;meshValidation=null;$('mergedStl').disabled=true;emptyCanvas(solidCtx,'Volvé a fusionar');emptyCanvas(solidShadowCtx,'Volvé a fusionar');$('comparison').textContent='La resolución cambió; la comparación anterior ya no es válida.';updateBench();});
+$('mergeMesh').addEventListener('click',()=>{
+ if(!connectedNetwork?.bars.length)return;
+ try {
+  $('meshReport').textContent='Calculando unión de vóxeles…';
+  // Yield a frame before an expensive synchronous prototype step.
+  requestAnimationFrame(()=>setTimeout(()=>{
+   try{
+    const mesh=voxelizeNetwork(connectedNetwork,{resolutionMm:Number($('voxel').value)});
+    const check=validateSurface(mesh);
+    fusedMesh=mesh;meshValidation=check;updateBench();
+    drawMeshOrbit(solidCtx,mesh,{yaw:orbitYaw,pitch:orbitPitch});
+    try{
+     drawMeshShadow(solidShadowCtx,mesh,{lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),receiverSizeMm:300});
+     drawTargetOnReceiver(receiverReferenceCtx,target,{targetSizeMm:180,receiverSizeMm:300});
+     const metric=compareCanvasMasks(receiverReferenceCtx,solidShadowCtx);
+     $('comparison').textContent='Solapamiento con sombra objetivo a escala del receptor: '+(metric.iou*100).toFixed(1)+' % · Diferencia: '+(metric.error*100).toFixed(1)+' %. Métrica orientativa; no equivale a precisión física.';
+    }catch(e){$('comparison').textContent='Proyección no disponible: '+e.message;}
+    $('mergedStl').disabled=!(check.watertight&&mesh.stats.components===1&&opticalAcceptable);
+    $('meshReport').textContent='Componentes sólidos: '+mesh.stats.components+' · Triángulos: '+mesh.stats.triangles+' · Superficie cerrada: '+(check.watertight?'sí':'no')+' · Bordes problemáticos: '+check.nonManifoldEdges+'. Validación de impresión pendiente.';
+   }catch(error){fusedMesh=null;meshValidation=null;$('mergedStl').disabled=true;$('meshReport').textContent='No se pudo fusionar: '+error.message;}
+  },0));
+ }catch(error){$('meshReport').textContent=error.message;}
+});
+$('mergedStl').addEventListener('click',()=>{
+ if(!fusedMesh || !meshValidation?.watertight || fusedMesh.stats.components!==1 || !opticalAcceptable)return;
+ const blob=new Blob([meshToAsciiStl(fusedMesh)],{type:'model/stl'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='shadow-portrait-v04-voxel-EXPERIMENTAL.stl';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 $('stl').addEventListener('click',()=>{
  if(!generatedBars?.length)return;
@@ -94,7 +175,7 @@ $('stl').addEventListener('click',()=>{
  a.href=url;a.download='shadow-portrait-experimental-UNCONNECTED.stl';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 document.querySelectorAll('input[name=mode]').forEach(r=>r.addEventListener('change',()=>{
- $('methodNote').textContent=r.value==='lines'&&r.checked?'Motor de filamentos: interfaz y contrato previstos. Algoritmo geométrico pendiente.':r.value==='volume'&&r.checked?'Motor volumétrico: interfaz y contrato previstos. Algoritmo geométrico pendiente.':$('methodNote').textContent;
+ $('methodNote').textContent=r.value==='lines'&&r.checked?'Filamentos: motor experimental disponible; todavía no se garantiza imprimibilidad.':r.value==='volume'&&r.checked?'Motor volumétrico: interfaz y contrato previstos. Algoritmo geométrico pendiente.':$('methodNote').textContent;
 }));
 $('export').addEventListener('click',()=>{
  const settings={schemaVersion:'0.3.0',title:$('title').value,sourceFileName:originalName,mode:document.querySelector('input[name=mode]:checked').value,preprocessing:{threshold:Number($('threshold').value),contrast:Number($('contrast').value),invert:$('invert').checked},targetWidth:size,targetHeight:size,scene:{lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),objectSizeMm:160,receiverSizeMm:300},sourceIncluded:false};
