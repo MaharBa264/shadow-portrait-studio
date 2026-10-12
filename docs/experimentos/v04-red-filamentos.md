@@ -72,3 +72,19 @@ Se añadió control explícito de vigencia de la malla. Al modificar el tamaño 
 **Límite de esta mitigación:** el diagnóstico actual `validateSurface` solo cuenta incidencia de aristas no orientadas; no comprueba intersecciones globales, orientación coherente, calidad de triángulos, resistencia mecánica, dimensiones reales ni accesibilidad de soportes. La UI debe mantener la leyenda «experimental».
 
 **Estado de pruebas:** casos automáticos versionados en GitHub; no hay evidencia de ejecución satisfactoria revisada aquí. No fusionar a `main` hasta contar con señal CI o ejecución reproducible y revisión en navegador.
+
+## Confirmación de CI y puerta de vista previa (12/10/2026)
+
+Se consultó GitHub Actions para el commit `d13dae4e28d83d0a164b2ac7378f00582863ccae`. Workflow **Validate web prototype**, run **#21**, ID **38246740241**, estado `completed`, conclusión `success`. Esta evidencia confirma el resultado del workflow (pruebas de Node y compilación estática), **no** una prueba en navegador ni la validez de fabricación de las mallas.
+
+El despliegue de vista previa de Cloudflare Pages para la rama `feature/v0.4-connected-filaments` **no está confirmado**. Antes de dar por publicada la v0.4 de prueba, verificar en Cloudflare Pages > Deployments que exista un preview deployment con el commit correcto. No realizar merge en main solamente para obtener una URL de prueba. El PR #1 permanece en borrador.
+
+### Checklist para prueba manual de preview
+
+1. Abrir la URL de preview que Cloudflare indique explícitamente y anotar commit y fecha.
+2. Cargar imagen simple de alto contraste; generar filamentos y fusionar malla.
+3. Girar el sólido con mouse/táctil; comprobar que no se congela ni queda en blanco.
+4. Observar sombra proyectada y métrica IoU en el mismo plano de referencia.
+5. Modificar resolución: vista y exportación previas deben invalidarse.
+6. Verificar que STL fusionado solo se habilita con diagnóstico preliminar válido; abrirlo en laminador sin interpretar esto como prueba de impresión.
+7. Repetir en escritorio y teléfono. Registrar errores, modelo de dispositivo y tiempo aproximado.
