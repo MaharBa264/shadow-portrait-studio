@@ -64,3 +64,11 @@ Se detectó un sesgo conceptual en la comparación anterior: la proyección del 
 La corrección es una decisión óptica explícita: la referencia de 180 mm corresponde a la sombra final, **no** a una máscara real ubicada en el objeto. No resuelve el problema de estetizar la escultura ni de verificar físicamente la iluminación.
 
 **Pendiente de verificación:** ejecutar CI en la rama y pruebas de navegador para confirmar el cambio. No se declara aprobado por el mero commit. Continuar con render acelerado/Worker, suavizado de malla, base y evaluación de manufacturabilidad.
+
+## Revisión de seguridad del editor (12/10/2026)
+
+Se añadió control explícito de vigencia de la malla. Al modificar el tamaño del vóxel se invalidan el resultado anterior, la vista sólida, la proyección y la habilitación de descarga. La exportación comprueba nuevamente el diagnóstico y exige un solo componente de ocupación, además de la comprobación preliminar de superficie cerrada.
+
+**Límite de esta mitigación:** el diagnóstico actual `validateSurface` solo cuenta incidencia de aristas no orientadas; no comprueba intersecciones globales, orientación coherente, calidad de triángulos, resistencia mecánica, dimensiones reales ni accesibilidad de soportes. La UI debe mantener la leyenda «experimental».
+
+**Estado de pruebas:** casos automáticos versionados en GitHub; no hay evidencia de ejecución satisfactoria revisada aquí. No fusionar a `main` hasta contar con señal CI o ejecución reproducible y revisión en navegador.
