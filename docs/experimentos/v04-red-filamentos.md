@@ -113,3 +113,7 @@ El despliegue de vista previa de Cloudflare Pages para la rama `feature/v0.4-con
 **Advertencia sobre el banco:** la etapa 2 y 3 aproximan filamentos como trazos de grosor proyectado; la etapa 4 rasteriza caras de malla. Las diferencias entre estos dos métodos pueden introducir variaciones. La oclusión y el acabado óptico reales todavía requieren pruebas físicas.
 
 **Estado:** código y pruebas publicados en rama de desarrollo; resultados del último workflow **pendientes de consultar** y prueba visual **pendiente de repetir**. Mantener `main` en v0.3.
+
+### Evidencia de CI del banco óptico
+
+Para el commit `84b83ec699aceca00f5d37a60edfbe052b77430f` se verificó el workflow **Validate web prototype**, run **#28**, ID **38308494501**, estado `completed`, conclusión `success`. Este run valida el código y los tests del banco óptico agregados hasta ese commit. El cambio posterior es documentación. **No equivale a validación de navegación visual ni a resultado físico.**
