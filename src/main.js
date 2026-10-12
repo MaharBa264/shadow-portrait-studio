@@ -14,6 +14,7 @@ let originalName = null;
 let generatedBars = null;
 let connectedNetwork=null;
 let fusedMesh=null;
+let meshValidation=null;
 let orbitYaw=.7,orbitPitch=.35;
 const solidCtx=$('solidView').getContext('2d'),solidShadowCtx=$('solidShadow').getContext('2d');
 const geometryCtx = $('geometry').getContext('2d');
@@ -27,7 +28,7 @@ function sceneSettings(){
  return {lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),receiverSizeMm:180};
 }
 function invalidateGeometry(){
- generatedBars=null;connectedNetwork=null;fusedMesh=null;$('stl').disabled=true;$('mergeMesh').disabled=true;$('mergedStl').disabled=true;$('meshReport').textContent='Generá nuevos filamentos antes de fusionar la malla.';
+ generatedBars=null;connectedNetwork=null;fusedMesh=null;meshValidation=null;$('stl').disabled=true;$('mergeMesh').disabled=true;$('mergedStl').disabled=true;$('meshReport').textContent='Generá nuevos filamentos antes de fusionar la malla.';
  emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');emptyCanvas(solidCtx,'Fusioná la malla');emptyCanvas(solidShadowCtx,'Fusioná la malla');$('comparison').textContent='Generá y fusioná una malla para comparar.';
  $('geometryInfo').textContent='Generá de nuevo para actualizar la geometría.';
 }
@@ -108,7 +109,7 @@ viewCanvas.addEventListener('pointermove',e=>{
  drawMeshOrbit(solidCtx,fusedMesh,{yaw:orbitYaw,pitch:orbitPitch});
 });
 for(const type of ['pointerup','pointercancel'])viewCanvas.addEventListener(type,()=>{pointer=null;});
-$('voxel').addEventListener('input',()=>{ $('voxelValue').value=$('voxel').value;fusedMesh=null;$('mergedStl').disabled=true;});
+$('voxel').addEventListener('input',()=>{ $('voxelValue').value=$('voxel').value;fusedMesh=null;meshValidation=null;$('mergedStl').disabled=true;emptyCanvas(solidCtx,'Volvé a fusionar');emptyCanvas(solidShadowCtx,'Volvé a fusionar');$('comparison').textContent='La resolución cambió; la comparación anterior ya no es válida.';});
 $('mergeMesh').addEventListener('click',()=>{
  if(!connectedNetwork?.bars.length)return;
  try {
@@ -118,7 +119,7 @@ $('mergeMesh').addEventListener('click',()=>{
    try{
     const mesh=voxelizeNetwork(connectedNetwork,{resolutionMm:Number($('voxel').value)});
     const check=validateSurface(mesh);
-    fusedMesh=mesh;
+    fusedMesh=mesh;meshValidation=check;
     drawMeshOrbit(solidCtx,mesh,{yaw:orbitYaw,pitch:orbitPitch});
     try{
      drawMeshShadow(solidShadowCtx,mesh,{lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),receiverSizeMm:300});
@@ -128,12 +129,12 @@ $('mergeMesh').addEventListener('click',()=>{
     }catch(e){$('comparison').textContent='Proyección no disponible: '+e.message;}
     $('mergedStl').disabled=!(check.watertight&&mesh.stats.components===1);
     $('meshReport').textContent='Componentes sólidos: '+mesh.stats.components+' · Triángulos: '+mesh.stats.triangles+' · Superficie cerrada: '+(check.watertight?'sí':'no')+' · Bordes problemáticos: '+check.nonManifoldEdges+'. Validación de impresión pendiente.';
-   }catch(error){fusedMesh=null;$('mergedStl').disabled=true;$('meshReport').textContent='No se pudo fusionar: '+error.message;}
+   }catch(error){fusedMesh=null;meshValidation=null;$('mergedStl').disabled=true;$('meshReport').textContent='No se pudo fusionar: '+error.message;}
   },0));
  }catch(error){$('meshReport').textContent=error.message;}
 });
 $('mergedStl').addEventListener('click',()=>{
- if(!fusedMesh)return;
+ if(!fusedMesh || !meshValidation?.watertight || fusedMesh.stats.components!==1)return;
  const blob=new Blob([meshToAsciiStl(fusedMesh)],{type:'model/stl'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download='shadow-portrait-v04-voxel-EXPERIMENTAL.stl';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -145,7 +146,7 @@ $('stl').addEventListener('click',()=>{
  a.href=url;a.download='shadow-portrait-experimental-UNCONNECTED.stl';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 document.querySelectorAll('input[name=mode]').forEach(r=>r.addEventListener('change',()=>{
- $('methodNote').textContent=r.value==='lines'&&r.checked?'Motor de filamentos: interfaz y contrato previstos. Algoritmo geométrico pendiente.':r.value==='volume'&&r.checked?'Motor volumétrico: interfaz y contrato previstos. Algoritmo geométrico pendiente.':$('methodNote').textContent;
+ $('methodNote').textContent=r.value==='lines'&&r.checked?'Filamentos: motor experimental disponible; todavía no se garantiza imprimibilidad.':r.value==='volume'&&r.checked?'Motor volumétrico: interfaz y contrato previstos. Algoritmo geométrico pendiente.':$('methodNote').textContent;
 }));
 $('export').addEventListener('click',()=>{
  const settings={schemaVersion:'0.3.0',title:$('title').value,sourceFileName:originalName,mode:document.querySelector('input[name=mode]:checked').value,preprocessing:{threshold:Number($('threshold').value),contrast:Number($('contrast').value),invert:$('invert').checked},targetWidth:size,targetHeight:size,scene:{lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),objectSizeMm:160,receiverSizeMm:300},sourceIncluded:false};
