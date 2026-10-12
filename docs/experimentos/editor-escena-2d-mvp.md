@@ -51,3 +51,9 @@ La máscara ideal usa tamaño virtual fijo de 160 mm en un receptor de 300 mm. L
 **Límite físico esencial:** «huella proyectada» significa el intervalo geométrico de la **sección abstracta del volumen permitido**, NO la silueta calculada de la escultura y tampoco la fotografía real de una pared. No implica que los píxeles oscuros del retrato se adapten automáticamente al mover la luz. El receptor sigue fijo en z=0, se usa fuente puntual y se omite la tercera dimensión.
 
 **Pendiente:** confirmar CI para el último commit, revisar la vista previa en navegador, ajustar el diseño responsivo y recién entonces planificar edición de la pared y orientación real del receptor.
+
+### Incidente de integración: variable lateral no declarada
+
+GitHub Actions run **#43**, ID `38313707105`, falló en `npm test`: 3 pruebas de `generator-lines.test.mjs` encontraron `ReferenceError: objectX is not defined`. El desplazamiento lateral había sido usado en `generateLineBars` sin desestructurar el parámetro opcional. El 12/10/2026 se publicó la corrección en commit `cd1402a671cf3976eca87b4f026ef09effe08556`, con `objectX=0` para preservar el comportamiento de v0.3. **Esperar la nueva ejecución de CI; no describir como tests aprobados hasta confirmación.**
+
+El usuario ya validó por navegador el arrastre básico de la versión previa del editor; todavía no validó la visualización de huella ni la corrección del generador.
