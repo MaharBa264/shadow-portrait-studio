@@ -98,3 +98,18 @@ El despliegue de vista previa de Cloudflare Pages para la rama `feature/v0.4-con
 **Mitigación inmediata publicada en la rama:** desactivar la variación sinusoidal de profundidad para las llamadas de la interfaz (`depthVariationMm: 0`). Esto elimina el patrón injustificado, **NO soluciona la apariencia escultórica ni garantiza la sombra**, y reduce temporalmente la diversidad tridimensional. No se considera la v0.4 aprobada.
 
 **Siguiente criterio de aceptación imprescindible:** implementar un ciclo de evaluación sombra objetivo vs. sombra de la malla, con umbral y rechazo por baja similitud; visualizar la diferencia; evaluar conectores con y sin puentes; diseñar un nuevo generador guiado por rasgos de imagen que no use sinusoides arbitrarias. Evitar fusionar en main hasta que un ejemplo sencillo supere visualmente el criterio. Se requiere captura, parámetros y puntuaciones de una ejecución reproducible para investigar la falla de sombra.
+
+## Banco óptico de cuatro etapas (12/10/2026)
+
+**Motivación:** la prueba visual del usuario no reconoció el retrato en la sombra de v0.4. La iteración no pasa el criterio funcional básico y no debe fusionarse a producción.
+
+**Implementación en rama:**
+- `src/optical-bench.js`: proyección de segmentos bajo una única luz puntual y escala común; cálculo de IoU, píxeles negros extra y faltantes; indicador de primera pérdida de más de 8 puntos de IoU.
+- `index.html` y `src/main.js`: panel con (1) objetivo escalado a receptor 300 mm con imagen deseada de 180 mm, (2) barras originales, (3) barras + puentes y columna, (4) malla fusionada.
+- `tests/optical-bench.test.mjs`: contraste de máscaras, falso positivo, localización de caída y rechazo de geometría fuera de la luz.
+
+**Interpretación:** si la etapa 2 ya falla, investigar muestreo de filas, longitud/ancho de barras y escala. Si la etapa 3 falla respecto de la 2, conexiones y columna agregan sombra. Si la etapa 4 falla respecto de la 3, revisar voxelización y proyección de triángulos. Un descenso mayor a 0,08 en IoU es solo alerta diagnóstica, **no una condición suficiente de aceptación**. Aún no hay un umbral empírico calibrado para afirmar que un retrato es reconocible.
+
+**Advertencia sobre el banco:** la etapa 2 y 3 aproximan filamentos como trazos de grosor proyectado; la etapa 4 rasteriza caras de malla. Las diferencias entre estos dos métodos pueden introducir variaciones. La oclusión y el acabado óptico reales todavía requieren pruebas físicas.
+
+**Estado:** código y pruebas publicados en rama de desarrollo; resultados del último workflow **pendientes de consultar** y prueba visual **pendiente de repetir**. Mantener `main` en v0.3.
