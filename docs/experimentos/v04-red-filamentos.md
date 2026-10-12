@@ -117,3 +117,19 @@ El despliegue de vista previa de Cloudflare Pages para la rama `feature/v0.4-con
 ### Evidencia de CI del banco óptico
 
 Para el commit `84b83ec699aceca00f5d37a60edfbe052b77430f` se verificó el workflow **Validate web prototype**, run **#28**, ID **38308494501**, estado `completed`, conclusión `success`. Este run valida el código y los tests del banco óptico agregados hasta ese commit. El cambio posterior es documentación. **No equivale a validación de navegación visual ni a resultado físico.**
+
+## Evidencia aportada por el usuario: banco óptico (12/10/2026)
+
+Capturas de la vista previa `0c0d5759.shadow-portrait-studio.pages.dev` con fotografía de una persona dibujando y máscara de umbral 98, contraste 1,0, 60 filas, espesor 1,8 mm, luz a 300 mm, objeto a 100 mm y resolución vóxel 1,5 mm.
+
+Resultados registrados visualmente:
+- Barras originales: **IoU 84,2 %**, extra 2310, faltantes 505.
+- Barras + conexiones: **IoU 38,3 %**, extra 24747, faltantes 55.
+- Malla fusionada: **IoU 34,5 %**, extra 29286, faltantes 20.
+- Geometría declarada por herramienta: 1 componente sólido, 23692 triángulos, 0 bordes problemáticos. **No acredita imprimibilidad**.
+
+Diagnóstico: el principal deterioro se introduce con **puentes y columna** (−45,9 puntos de IoU), no en la fusión por vóxeles (−3,8 puntos adicionales). La columna lateral no es verdaderamente inocua en la proyección: unir todos los extremos de filas con segmentos horizontales tapa regiones blancas. La barra horizontal repetida aparece como un bloque negro; además el objeto queda esencialmente planar al eliminar la oscilación sinusoidal.
+
+Corrección preventiva publicada: el banco reporta la **mayor pérdida**, en vez de confundirla con la primera; se impide descargar el STL fusionado si su IoU disminuye más de 8 puntos respecto de las barras originales o si la línea base IoU < 70 %. Estas cifras son **criterios experimentales de seguridad**, no umbrales artísticos calibrados ni garantías de imprimibilidad.
+
+Próxima arquitectura de conexión: guiar puentes por zonas ya oscuras del objetivo, o fuera del área visible cuando sea físicamente posible; estudiar soporte modular y ensamblaje como alternativa a la conexión total. Evaluar cada candidato con proyección óptica completa antes de aceptarlo. Si no existe conexión viable sin deterioro excesivo, declarar «no hay solución bajo estas restricciones» en vez de exportar una pieza engañosa.
