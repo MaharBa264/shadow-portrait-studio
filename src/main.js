@@ -1,4 +1,4 @@
-import {drawMeshOrbit,drawMeshShadow,compareCanvasMasks} from './mesh-view.js';
+import {drawMeshOrbit,drawMeshShadow,compareCanvasMasks,drawTargetOnReceiver} from './mesh-view.js';
 import { createConnectedPaths } from './connected-paths.js';
 import { voxelizeNetwork,validateSurface,meshToAsciiStl } from './voxel-mesh.js';
 import { generateLineBars, projectBars, barsToAsciiStl } from './generator-lines.js';
@@ -19,6 +19,8 @@ const solidCtx=$('solidView').getContext('2d'),solidShadowCtx=$('solidShadow').g
 const geometryCtx = $('geometry').getContext('2d');
 const castCtx = $('cast').getContext('2d');
 const size = 420;
+const receiverReference=document.createElement('canvas');receiverReference.width=receiverReference.height=size;
+const receiverReferenceCtx=receiverReference.getContext('2d');
 function emptyCanvas(ctx,text){ctx.fillStyle='#eff2f6';ctx.fillRect(0,0,size,size);ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.font='16px system-ui';ctx.fillText(text,size/2,size/2);}
 emptyCanvas(originalCtx,'Cargá tu fotografía');emptyCanvas(targetCtx,'Esperando imagen');emptyCanvas(projectionCtx,'Esperando máscara');emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');emptyCanvas(solidCtx,'Fusioná la malla');emptyCanvas(solidShadowCtx,'Fusioná la malla');
 function sceneSettings(){
@@ -120,8 +122,9 @@ $('mergeMesh').addEventListener('click',()=>{
     drawMeshOrbit(solidCtx,mesh,{yaw:orbitYaw,pitch:orbitPitch});
     try{
      drawMeshShadow(solidShadowCtx,mesh,{lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),receiverSizeMm:300});
-     const metric=compareCanvasMasks(projectionCtx,solidShadowCtx);
-     $('comparison').textContent='Solapamiento con máscara plana de referencia: '+(metric.iou*100).toFixed(1)+' % · Diferencia: '+(metric.error*100).toFixed(1)+' %. Métrica orientativa; no equivale a precisión física.';
+     drawTargetOnReceiver(receiverReferenceCtx,target,{targetSizeMm:180,receiverSizeMm:300});
+     const metric=compareCanvasMasks(receiverReferenceCtx,solidShadowCtx);
+     $('comparison').textContent='Solapamiento con sombra objetivo a escala del receptor: '+(metric.iou*100).toFixed(1)+' % · Diferencia: '+(metric.error*100).toFixed(1)+' %. Métrica orientativa; no equivale a precisión física.';
     }catch(e){$('comparison').textContent='Proyección no disponible: '+e.message;}
     $('mergedStl').disabled=!(check.watertight&&mesh.stats.components===1);
     $('meshReport').textContent='Componentes sólidos: '+mesh.stats.components+' · Triángulos: '+mesh.stats.triangles+' · Superficie cerrada: '+(check.watertight?'sí':'no')+' · Bordes problemáticos: '+check.nonManifoldEdges+'. Validación de impresión pendiente.';
