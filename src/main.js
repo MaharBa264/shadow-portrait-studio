@@ -16,6 +16,7 @@ let generatedBars = null;
 let connectedNetwork=null;
 let fusedMesh=null;
 let meshValidation=null;
+let opticalAcceptable=false;
 let orbitYaw=.7,orbitPitch=.35;
 const solidCtx=$('solidView').getContext('2d'),solidShadowCtx=$('solidShadow').getContext('2d');
 const geometryCtx = $('geometry').getContext('2d');
@@ -40,11 +41,14 @@ function updateBench(){
  paintProjectedSegments(benchCtx[2],[...connectedNetwork.bars,...connectedNetwork.bridges],sceneBench());
  if(fusedMesh)drawMeshShadow(benchCtx[3],fusedMesh,sceneBench());
  else {benchCtx[3].fillStyle='#fff';benchCtx[3].fillRect(0,0,size,size);}
- const {results,firstLoss}=diagnoseStages([benchCtx[0],benchCtx[1],benchCtx[2],fusedMesh?benchCtx[3]:null],benchCtx[0]);
+ const {results,firstLoss,largestLoss,maxDrop}=diagnoseStages([benchCtx[0],benchCtx[1],benchCtx[2],fusedMesh?benchCtx[3]:null],benchCtx[0]);
  for(const [index,id] of [[1,'benchBarsScore'],[2,'benchLinksScore'],[3,'benchSolidScore']]){
   const val=results[index];$(id).textContent=val?'Coincidencia IoU '+(val.iou*100).toFixed(1)+' % · píxeles extra '+val.falsePositive+' · faltantes '+val.falseNegative:'Pendiente de fusionar malla';
  }
- $('benchDiagnosis').textContent=firstLoss===null?'Sin caída mayor de ocho puntos entre etapas calculadas. Revisá igualmente la imagen.':'Primera caída significativa: etapa '+(firstLoss+1)+'. Revisar esta transformación.';
+ const goodBaseline=results[1]?.iou>=0.7;
+ opticalAcceptable=!!(fusedMesh&&goodBaseline&&results[3]&&results[3].iou>=results[1].iou-0.08);
+ $('benchDiagnosis').textContent=largestLoss===null?'Sin etapas comparables.':('Mayor pérdida: etapa '+(largestLoss+1)+' ('+(maxDrop*100).toFixed(1)+' puntos).'+(firstLoss!==null?' Primera caída: etapa '+(firstLoss+1)+'.':'')+(opticalAcceptable?' Proyección experimental dentro de tolerancia.':' Fidelidad insuficiente: no exportar el sólido.'));
+
 }
 clearBench();
 function emptyCanvas(ctx,text){ctx.fillStyle='#eff2f6';ctx.fillRect(0,0,size,size);ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.font='16px system-ui';ctx.fillText(text,size/2,size/2);}
@@ -53,7 +57,7 @@ function sceneSettings(){
  return {lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),receiverSizeMm:180};
 }
 function invalidateGeometry(){
- generatedBars=null;connectedNetwork=null;fusedMesh=null;meshValidation=null;$('stl').disabled=true;$('mergeMesh').disabled=true;$('mergedStl').disabled=true;$('meshReport').textContent='Generá nuevos filamentos antes de fusionar la malla.';
+ generatedBars=null;connectedNetwork=null;fusedMesh=null;meshValidation=null;opticalAcceptable=false;$('stl').disabled=true;$('mergeMesh').disabled=true;$('mergedStl').disabled=true;$('meshReport').textContent='Generá nuevos filamentos antes de fusionar la malla.';
  emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');emptyCanvas(solidCtx,'Fusioná la malla');emptyCanvas(solidShadowCtx,'Fusioná la malla');$('comparison').textContent='Generá y fusioná una malla para comparar.';
  $('geometryInfo').textContent='Generá de nuevo para actualizar la geometría.';clearBench();
 }
@@ -152,14 +156,14 @@ $('mergeMesh').addEventListener('click',()=>{
      const metric=compareCanvasMasks(receiverReferenceCtx,solidShadowCtx);
      $('comparison').textContent='Solapamiento con sombra objetivo a escala del receptor: '+(metric.iou*100).toFixed(1)+' % · Diferencia: '+(metric.error*100).toFixed(1)+' %. Métrica orientativa; no equivale a precisión física.';
     }catch(e){$('comparison').textContent='Proyección no disponible: '+e.message;}
-    $('mergedStl').disabled=!(check.watertight&&mesh.stats.components===1);
+    $('mergedStl').disabled=!(check.watertight&&mesh.stats.components===1&&opticalAcceptable);
     $('meshReport').textContent='Componentes sólidos: '+mesh.stats.components+' · Triángulos: '+mesh.stats.triangles+' · Superficie cerrada: '+(check.watertight?'sí':'no')+' · Bordes problemáticos: '+check.nonManifoldEdges+'. Validación de impresión pendiente.';
    }catch(error){fusedMesh=null;meshValidation=null;$('mergedStl').disabled=true;$('meshReport').textContent='No se pudo fusionar: '+error.message;}
   },0));
  }catch(error){$('meshReport').textContent=error.message;}
 });
 $('mergedStl').addEventListener('click',()=>{
- if(!fusedMesh || !meshValidation?.watertight || fusedMesh.stats.components!==1)return;
+ if(!fusedMesh || !meshValidation?.watertight || fusedMesh.stats.components!==1 || !opticalAcceptable)return;
  const blob=new Blob([meshToAsciiStl(fusedMesh)],{type:'model/stl'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download='shadow-portrait-v04-voxel-EXPERIMENTAL.stl';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
