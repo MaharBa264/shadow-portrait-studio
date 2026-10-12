@@ -1,3 +1,4 @@
+import {paintProjectedSegments,scoreMasks,diagnoseStages} from './optical-bench.js';
 import {drawMeshOrbit,drawMeshShadow,compareCanvasMasks,drawTargetOnReceiver} from './mesh-view.js';
 import { createConnectedPaths } from './connected-paths.js';
 import { voxelizeNetwork,validateSurface,meshToAsciiStl } from './voxel-mesh.js';
@@ -22,6 +23,30 @@ const castCtx = $('cast').getContext('2d');
 const size = 420;
 const receiverReference=document.createElement('canvas');receiverReference.width=receiverReference.height=size;
 const receiverReferenceCtx=receiverReference.getContext('2d');
+const benchIds=['benchTarget','benchBars','benchLinks','benchSolid'];
+const benchCtx=benchIds.map(id=>$(id).getContext('2d',{willReadFrequently:true}));
+function clearBench(){
+ for(const ctx of benchCtx){ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);}
+ for(const id of ['benchBarsScore','benchLinksScore','benchSolidScore'])$(id).textContent='Sin calcular';
+ $('benchDiagnosis').textContent='Generá filamentos para diagnosticar.';
+}
+function sceneBench(){
+ return {lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),receiverSizeMm:300};
+}
+function updateBench(){
+ if(!generatedBars||!connectedNetwork)return;
+ drawTargetOnReceiver(benchCtx[0],target,{targetSizeMm:180,receiverSizeMm:300});
+ paintProjectedSegments(benchCtx[1],generatedBars,sceneBench());
+ paintProjectedSegments(benchCtx[2],[...connectedNetwork.bars,...connectedNetwork.bridges],sceneBench());
+ if(fusedMesh)drawMeshShadow(benchCtx[3],fusedMesh,sceneBench());
+ else {benchCtx[3].fillStyle='#fff';benchCtx[3].fillRect(0,0,size,size);}
+ const {results,firstLoss}=diagnoseStages([benchCtx[0],benchCtx[1],benchCtx[2],fusedMesh?benchCtx[3]:null],benchCtx[0]);
+ for(const [index,id] of [[1,'benchBarsScore'],[2,'benchLinksScore'],[3,'benchSolidScore']]){
+  const val=results[index];$(id).textContent=val?'Coincidencia IoU '+(val.iou*100).toFixed(1)+' % · píxeles extra '+val.falsePositive+' · faltantes '+val.falseNegative:'Pendiente de fusionar malla';
+ }
+ $('benchDiagnosis').textContent=firstLoss===null?'Sin caída mayor de ocho puntos entre etapas calculadas. Revisá igualmente la imagen.':'Primera caída significativa: etapa '+(firstLoss+1)+'. Revisar esta transformación.';
+}
+clearBench();
 function emptyCanvas(ctx,text){ctx.fillStyle='#eff2f6';ctx.fillRect(0,0,size,size);ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.font='16px system-ui';ctx.fillText(text,size/2,size/2);}
 emptyCanvas(originalCtx,'Cargá tu fotografía');emptyCanvas(targetCtx,'Esperando imagen');emptyCanvas(projectionCtx,'Esperando máscara');emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');emptyCanvas(solidCtx,'Fusioná la malla');emptyCanvas(solidShadowCtx,'Fusioná la malla');
 function sceneSettings(){
@@ -30,7 +55,7 @@ function sceneSettings(){
 function invalidateGeometry(){
  generatedBars=null;connectedNetwork=null;fusedMesh=null;meshValidation=null;$('stl').disabled=true;$('mergeMesh').disabled=true;$('mergedStl').disabled=true;$('meshReport').textContent='Generá nuevos filamentos antes de fusionar la malla.';
  emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');emptyCanvas(solidCtx,'Fusioná la malla');emptyCanvas(solidShadowCtx,'Fusioná la malla');$('comparison').textContent='Generá y fusioná una malla para comparar.';
- $('geometryInfo').textContent='Generá de nuevo para actualizar la geometría.';
+ $('geometryInfo').textContent='Generá de nuevo para actualizar la geometría.';clearBench();
 }
 function drawBars(bars){
  const sizeMm=180;
@@ -93,7 +118,7 @@ $('generate').addEventListener('click',()=>{
   const data=targetCtx.getImageData(0,0,size,size);
   generatedBars=generateLineBars(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:0});
   connectedNetwork=createConnectedPaths(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:0});
-  drawBars(generatedBars);
+  drawBars(generatedBars);updateBench();
   $('stl').disabled=generatedBars.length===0;
   $('mergeMesh').disabled=!connectedNetwork.bars.length;
   $('status').textContent=generatedBars.length+' barras 3D calculadas. Modelo experimental, no conectado ni validado para impresión.';
@@ -109,7 +134,7 @@ viewCanvas.addEventListener('pointermove',e=>{
  drawMeshOrbit(solidCtx,fusedMesh,{yaw:orbitYaw,pitch:orbitPitch});
 });
 for(const type of ['pointerup','pointercancel'])viewCanvas.addEventListener(type,()=>{pointer=null;});
-$('voxel').addEventListener('input',()=>{ $('voxelValue').value=$('voxel').value;fusedMesh=null;meshValidation=null;$('mergedStl').disabled=true;emptyCanvas(solidCtx,'Volvé a fusionar');emptyCanvas(solidShadowCtx,'Volvé a fusionar');$('comparison').textContent='La resolución cambió; la comparación anterior ya no es válida.';});
+$('voxel').addEventListener('input',()=>{ $('voxelValue').value=$('voxel').value;fusedMesh=null;meshValidation=null;$('mergedStl').disabled=true;emptyCanvas(solidCtx,'Volvé a fusionar');emptyCanvas(solidShadowCtx,'Volvé a fusionar');$('comparison').textContent='La resolución cambió; la comparación anterior ya no es válida.';updateBench();});
 $('mergeMesh').addEventListener('click',()=>{
  if(!connectedNetwork?.bars.length)return;
  try {
@@ -119,7 +144,7 @@ $('mergeMesh').addEventListener('click',()=>{
    try{
     const mesh=voxelizeNetwork(connectedNetwork,{resolutionMm:Number($('voxel').value)});
     const check=validateSurface(mesh);
-    fusedMesh=mesh;meshValidation=check;
+    fusedMesh=mesh;meshValidation=check;updateBench();
     drawMeshOrbit(solidCtx,mesh,{yaw:orbitYaw,pitch:orbitPitch});
     try{
      drawMeshShadow(solidShadowCtx,mesh,{lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),receiverSizeMm:300});
