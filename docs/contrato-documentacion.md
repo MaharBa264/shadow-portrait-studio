@@ -48,6 +48,10 @@ Evidencias y enlaces:
 
 Estas decisiones se formalizan en `docs/arquitectura-v2.md`. Se abrirán ADR individuales si hay que reconsiderarlas.
 
+## Arquitectura vigente (actualización 2026-10-12)
+
+Contrato vigente: [arquitectura-v3.md](arquitectura-v3.md). Decisión formal: [ADR-0001](decisiones/ADR-0001-escena-geometria-intencion.md). La arquitectura v2 y el plan v0.4–v0.7 se conservan como históricos, y el trabajo experimental de la rama v0.4 no constituye una función aprobada.
+
 ## Actualización del estado
 
 Cada hito debe consignar: fecha, commit, pruebas realmente ejecutadas, observación de usuario y pendientes. No alterar el estado de un hito basándose únicamente en la existencia de código fuente.
