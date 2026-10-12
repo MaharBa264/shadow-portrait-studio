@@ -43,3 +43,14 @@ Proyectar juntas barras y puentes para medir cuánto error produce la columna ex
 - Interfaz de la rama: controles de resolución, botón de fusión y descarga solo cuando el diagnóstico preliminar da un componente y aristas pareadas.
 
 **Advertencias:** una superficie voxelizada puede ser cerrada y tener todavía problemas de fabricación, orientación, estabilidad o uniones delgadas. El proceso puede bloquear brevemente la interfaz al ser síncrono; moverlo a Web Worker es pendiente. Las superficies de vóxel presentan escalones visibles. La vista 3D sigue esquemática y no representa la malla fusionada. El método aún no evalúa la sombra de la malla sólida; el STL no debe considerarse listo para imprimir.
+
+## Experimento de visualización y sombra de malla (11/10/2026)
+
+- Se incorporó `src/mesh-view.js` con una vista orbitable Canvas 2D de la malla fusionada (arrastrar para girar).
+- Se dibuja la proyección de **cada triángulo de la malla**, en vez de basarse exclusivamente en barras y ejes. La escena usa luz puntual y plano receptor z=0.
+- La interfaz reporta una comparación de píxeles entre esta proyección y la vista de referencia de máscara plana (IoU y diferencia binaria). La comparación es orientativa: incluso los diferentes tamaños físicos de referencia pueden introducir diferencias que no son errores geométricos de fabricación.
+- Se escribieron `tests/mesh-view.test.mjs` con caja delimitadora y comprobaciones de proyección. **Ejecución en CI aún no verificada en esta sesión.**
+
+**Límites:** el visor ordena caras por profundidad media (no tiene z-buffer preciso), no usa Three.js, puede mostrar artefactos de oclusión y puede consumir bastante CPU. La sombra es geométrica sin penumbra, sin iluminación extendida y sin análisis de estabilidad ni resistencia. No se ha hecho calibración física. El modo desarrollo todavía no se ha publicado en producción.
+
+**Próxima tarea bloqueante:** probar CI/preview de la rama, corregir cualquier fallo, mover cálculos pesados a Worker, validar que proyección y geometría usen el mismo tamaño de receptor, optimizar el anclaje lateral y crear una base verificable antes de considerar terminada v0.4.
