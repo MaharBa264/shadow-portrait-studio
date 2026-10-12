@@ -3,7 +3,7 @@
 // The resulting STL contains separate bars, NOT a connected printable sculpture.
 export function generateLineBars(pixels, width, height, scene, {rows=60, thicknessMm=1.8, depthVariationMm=20}={}) {
  if (pixels.length!==width*height*4) throw new Error('Invalid image size');
- const {lightX,lightY=0,lightZ,objectZ,receiverSizeMm}=scene;
+ const {lightX,lightY=0,lightZ,objectZ,objectX=0,receiverSizeMm}=scene;
  if (![lightX,lightY,lightZ,objectZ,receiverSizeMm,rows,thicknessMm,depthVariationMm].every(Number.isFinite)) throw new Error('Non-finite parameter');
  if (!(lightZ>objectZ+depthVariationMm && objectZ-depthVariationMm>0 && rows>=1 && rows<=250 && thicknessMm>0 && receiverSizeMm>0)) throw new Error('Invalid scene bounds');
  const bars=[];
@@ -21,7 +21,7 @@ export function generateLineBars(pixels, width, height, scene, {rows=60, thickne
      const xb=lightX+((ix/width-.5)*receiverSizeMm-lightX)*k;
      const wy=(.5-(iy+.5)/height)*receiverSizeMm;
      const y=lightY+(wy-lightY)*k;
-     bars.push({a:[xa,y,z],b:[xb,y,z],thicknessMm});
+     bars.push({a:[xa+objectX,y,z],b:[xb+objectX,y,z],thicknessMm});
     }
     run=-1;
    }
