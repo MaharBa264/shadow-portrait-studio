@@ -10,6 +10,12 @@
 
 **Observación del usuario:** la sombra y la proyección de v0.3 se ven razonablemente bien; el objeto no tiene todavía una forma escultórica convincente. No hay impresión física documentada ni prueba de validación geométrica final.
 
+## Arquitectura vigente
+
+**[Arquitectura v3 — Escena óptica, familias geométricas e intención artística](docs/arquitectura-v3.md)**. [ADR-0001: decisión y motivos](docs/decisiones/ADR-0001-escena-geometria-intencion.md).
+
+La escena podrá editarse desde una vista lateral interactiva; las familias previstas son Franjas/listones variables, Primitivas dispersas, Filamentos y Volumen abstracto. La intención visual podrá ser Reconocible, Abstracta u Oculta. Todo esto es **contrato futuro**, no funcionalidad disponible en producción. La v0.4 de filamentos conectados no superó la prueba de sombra del usuario y permanece experimental.
+
 ## Contrato de idioma
 
 El nombre propio **Shadow Portrait Studio** se mantiene en inglés. **Toda la experiencia de usuario y la documentación se redactarán en español**, incluidos los nombres de modos y mensajes. Los identificadores de código o bibliotecas externas pueden usar inglés. Algunos textos de la interfaz actual aún están pendientes de revisión.
@@ -24,8 +30,10 @@ Los motores **Filamentos** y **Volumen** son representaciones geométricas indep
 
 ## Contratos y documentación
 
-- [Arquitectura v2 — contrato técnico vigente](docs/arquitectura-v2.md)
-- [Plan técnico y pruebas v0.4–v0.7](docs/plan-versiones-v04-v07.md)
+- [Arquitectura v3 — contrato vigente](docs/arquitectura-v3.md)
+- [ADR-0001 — motivo del cambio](docs/decisiones/ADR-0001-escena-geometria-intencion.md)
+- [Arquitectura v2 — documento histórico](docs/arquitectura-v2.md)
+- [Plan técnico v0.4–v0.7 — pendiente de reconciliar con v3](docs/plan-versiones-v04-v07.md)
 - [Contrato vivo de documentación](docs/contrato-documentacion.md)
 - [Arquitectura fundacional v0.1 — documento histórico](docs/architecture.md)
 
