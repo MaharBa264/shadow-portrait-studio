@@ -36,3 +36,18 @@ La máscara ideal usa tamaño virtual fijo de 160 mm en un receptor de 300 mm. L
 7. Resolver el límite de arrastre y valores numéricos en los rangos del MVP, y no validar impresión a partir de esta escena.
 
 **No significa terminación del hito del editor completo; es MVP de la vista lateral con pared fija.**
+
+## Iteración 2: zona de proyección y escala visible (12/10/2026)
+
+**Validación manual comunicada:** el usuario abrió la vista previa de Cloudflare de la rama y confirmó que **la luz y la pieza se mueven correctamente** mediante arrastre. También se observó una superposición de rótulos «Pared» y «Pieza». Esa prueba valida arrastre básico en el navegador utilizado, pero no equivalencia óptica física.
+
+**Cambios implementados:**
+- Función pura `shadowFootprint(scene)`: calcula factor de aumento de la luz puntual, centro y ancho del intervalo de sombra de la sección idealizada del objeto en el receptor z=0.
+- El plano receptor muestra zona útil en azul y huella proyectada en verde, o rojo si excede la zona útil.
+- Etiquetas de Pared/Pieza/Luz ancladas a ubicaciones distintas para evitar superposición.
+- El panel de datos indica tamaño proyectado, posición del centro, distancias y si la sombra cabe en la zona disponible.
+- Tests para factor de aumento, desplazamiento lateral y luz a distinta distancia.
+
+**Límite físico esencial:** «huella proyectada» significa el intervalo geométrico de la **sección abstracta del volumen permitido**, NO la silueta calculada de la escultura y tampoco la fotografía real de una pared. No implica que los píxeles oscuros del retrato se adapten automáticamente al mover la luz. El receptor sigue fijo en z=0, se usa fuente puntual y se omite la tercera dimensión.
+
+**Pendiente:** confirmar CI para el último commit, revisar la vista previa en navegador, ajustar el diseño responsivo y recién entonces planificar edición de la pared y orientación real del receptor.
