@@ -91,8 +91,8 @@ $('generate').addEventListener('click',()=>{
  if(document.querySelector('input[name=mode]:checked').value!=='lines'){$('status').textContent='El motor volumétrico todavía está pendiente. Seleccioná Filamentos.';return;}
  try{
   const data=targetCtx.getImageData(0,0,size,size);
-  generatedBars=generateLineBars(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:20});
-  connectedNetwork=createConnectedPaths(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:20});
+  generatedBars=generateLineBars(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:0});
+  connectedNetwork=createConnectedPaths(data.data,size,size,sceneSettings(),{rows:Number($('rows').value),thicknessMm:Number($('rod').value),depthVariationMm:0});
   drawBars(generatedBars);
   $('stl').disabled=generatedBars.length===0;
   $('mergeMesh').disabled=!connectedNetwork.bars.length;
