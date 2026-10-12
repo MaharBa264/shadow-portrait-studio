@@ -1,3 +1,4 @@
+import {defaultScene,validScene,drawScene,dragScene,hitScene} from './scene-editor.js';
 import { generateLineBars, projectBars, barsToAsciiStl } from './generator-lines.js';
 import { renderFlatMaskShadow, shadowScale } from './optics.js';
 const $ = (id) => document.getElementById(id);
@@ -12,10 +13,28 @@ let generatedBars = null;
 const geometryCtx = $('geometry').getContext('2d');
 const castCtx = $('cast').getContext('2d');
 const size = 420;
+const sceneCanvas=$('sceneCanvas');
+const sceneCtx=sceneCanvas.getContext('2d');
+function readScene(){return {...defaultScene(),lightX:Number($('lightX').value),lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),objectX:Number($('objectX').value)};}
+function paintScene(){
+ const s=readScene(); if(!validScene(s)){ $('sceneInfo').textContent='Escena fuera de límites';return;}
+ drawScene(sceneCtx,s);
+ for(const id of ['lightZ','objectZ','lightX','objectX'])$(id+'Value').value=$(id).value;
+ $('sceneInfo').textContent='Luz-pared: '+s.lightZ+' mm · Pieza-pared: '+s.objectZ+' mm · Luz-pieza: '+(s.lightZ-s.objectZ)+' mm · Desplazamiento lateral: '+s.objectX+' mm.';
+}
+let dragged=null;
+function pointerPos(event){const rect=sceneCanvas.getBoundingClientRect();return {x:(event.clientX-rect.left)*sceneCanvas.width/rect.width,y:(event.clientY-rect.top)*sceneCanvas.height/rect.height};}
+sceneCanvas.addEventListener('pointerdown',event=>{const {x,y}=pointerPos(event);dragged=hitScene(readScene(),x,y,sceneCanvas.width,sceneCanvas.height);if(dragged)sceneCanvas.setPointerCapture(event.pointerId);});
+sceneCanvas.addEventListener('pointermove',event=>{if(!dragged)return;const {x,y}=pointerPos(event);const updated=dragScene(readScene(),dragged,x,y,sceneCanvas.width,sceneCanvas.height);
+ for(const id of ['lightZ','objectZ','lightX','objectX'])$(id).value=String(Math.round(updated[id]/5)*5);
+ paintScene();updateProjection();invalidateGeometry();});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])sceneCanvas.addEventListener(type,()=>{dragged=null;});
+$('resetScene').addEventListener('click',()=>{const defaults=defaultScene();for(const id of ['lightZ','objectZ','lightX','objectX'])$(id).value=defaults[id];paintScene();updateProjection();invalidateGeometry();});
+paintScene();
 function emptyCanvas(ctx,text){ctx.fillStyle='#eff2f6';ctx.fillRect(0,0,size,size);ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.font='16px system-ui';ctx.fillText(text,size/2,size/2);}
 emptyCanvas(originalCtx,'Cargá tu fotografía');emptyCanvas(targetCtx,'Esperando imagen');emptyCanvas(projectionCtx,'Esperando máscara');emptyCanvas(geometryCtx,'Generación pendiente');emptyCanvas(castCtx,'Generación pendiente');
 function sceneSettings(){
- return {lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),receiverSizeMm:180};
+ return {lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),objectX:Number($('objectX').value),receiverSizeMm:180};
 }
 function invalidateGeometry(){
  generatedBars=null;$('stl').disabled=true;
@@ -45,7 +64,7 @@ function updateProjection(){
  const lightZ=Number($('lightZ').value),objectZ=Number($('objectZ').value),lightX=Number($('lightX').value);
  for (const id of ['lightZ','objectZ','lightX']) $(id+'Value').value=$(id).value;
  const pixels=targetCtx.getImageData(0,0,size,size);
- const scene={lightX,lightY:0,lightZ,objectZ,objectSizeMm:160,receiverSizeMm:300};
+ const scene={lightX,lightY:0,lightZ,objectZ,objectX:Number($('objectX').value),objectSizeMm:160,receiverSizeMm:300};
  const projected=renderFlatMaskShadow(pixels.data,size,size,scene,size);
  projectionCtx.putImageData(new ImageData(projected,size,size),0,0);
  $('opticalScale').textContent='Aumento geométrico: '+shadowScale(lightZ,objectZ).toFixed(2)+'× · máscara de 160 mm · pared visible 300 mm';
@@ -74,7 +93,7 @@ $('upload').addEventListener('change', async (event)=>{
  }catch(error){$('status').textContent='No se pudo leer la imagen.';}
 });
 ['threshold','contrast','invert'].forEach(id=>$(id).addEventListener('input',process));
-['lightZ','objectZ','lightX'].forEach(id=>$(id).addEventListener('input',()=>{updateProjection();invalidateGeometry();}));
+['lightZ','objectZ','lightX','objectX'].forEach(id=>$(id).addEventListener('input',()=>{paintScene();updateProjection();invalidateGeometry();}));
 ['rows','rod'].forEach(id=>$(id).addEventListener('input',()=>{$(id+'Value').value=$(id).value;invalidateGeometry();}));
 $('generate').addEventListener('click',()=>{
  if(!sourceData){$('status').textContent='Primero elegí una imagen.';return;}
@@ -97,7 +116,7 @@ document.querySelectorAll('input[name=mode]').forEach(r=>r.addEventListener('cha
  $('methodNote').textContent=r.value==='lines'&&r.checked?'Motor de filamentos: interfaz y contrato previstos. Algoritmo geométrico pendiente.':r.value==='volume'&&r.checked?'Motor volumétrico: interfaz y contrato previstos. Algoritmo geométrico pendiente.':$('methodNote').textContent;
 }));
 $('export').addEventListener('click',()=>{
- const settings={schemaVersion:'0.3.0',title:$('title').value,sourceFileName:originalName,mode:document.querySelector('input[name=mode]:checked').value,preprocessing:{threshold:Number($('threshold').value),contrast:Number($('contrast').value),invert:$('invert').checked},targetWidth:size,targetHeight:size,scene:{lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),objectSizeMm:160,receiverSizeMm:300},sourceIncluded:false};
+ const settings={schemaVersion:'0.3.0',editorSceneVersion:'1.0.0',title:$('title').value,sourceFileName:originalName,mode:document.querySelector('input[name=mode]:checked').value,preprocessing:{threshold:Number($('threshold').value),contrast:Number($('contrast').value),invert:$('invert').checked},targetWidth:size,targetHeight:size,scene:{lightX:Number($('lightX').value),lightY:0,lightZ:Number($('lightZ').value),objectZ:Number($('objectZ').value),objectX:Number($('objectX').value),objectSizeMm:160,receiverSizeMm:300},sourceIncluded:false};
  const blob=new Blob([JSON.stringify(settings,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='shadow-portrait-project.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
