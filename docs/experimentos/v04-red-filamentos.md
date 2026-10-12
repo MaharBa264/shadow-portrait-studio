@@ -88,3 +88,13 @@ El despliegue de vista previa de Cloudflare Pages para la rama `feature/v0.4-con
 5. Modificar resolución: vista y exportación previas deben invalidarse.
 6. Verificar que STL fusionado solo se habilita con diagnóstico preliminar válido; abrirlo en laminador sin interpretar esto como prueba de impresión.
 7. Repetir en escritorio y teléfono. Registrar errores, modelo de dispositivo y tiempo aproximado.
+
+## Prueba visual de usuario: v0.4 rechazada (12/10/2026)
+
+**Evidencia:** el usuario abrió la vista previa de Cloudflare e informó que el resultado se veía como barras dispuestas en una sinusoide, sin forma escultórica reconocible y sin sombra convincente. Este resultado prevalece sobre el éxito del CI: los tests no miden calidad estética ni fidelidad óptica real.
+
+**Causa identificada en código:** `generateLineBars` asigna `z = objectZ + sin(row / rows * 6π) * depthVariationMm`. Esa sinusoide fue una heurística sin vínculo con la imagen ni criterios estéticos. La v0.4 agrega puentes y voxelizaciones, pero no optimización del resultado.
+
+**Mitigación inmediata publicada en la rama:** desactivar la variación sinusoidal de profundidad para las llamadas de la interfaz (`depthVariationMm: 0`). Esto elimina el patrón injustificado, **NO soluciona la apariencia escultórica ni garantiza la sombra**, y reduce temporalmente la diversidad tridimensional. No se considera la v0.4 aprobada.
+
+**Siguiente criterio de aceptación imprescindible:** implementar un ciclo de evaluación sombra objetivo vs. sombra de la malla, con umbral y rechazo por baja similitud; visualizar la diferencia; evaluar conectores con y sin puentes; diseñar un nuevo generador guiado por rasgos de imagen que no use sinusoides arbitrarias. Evitar fusionar en main hasta que un ejemplo sencillo supere visualmente el criterio. Se requiere captura, parámetros y puntuaciones de una ejecución reproducible para investigar la falla de sombra.
