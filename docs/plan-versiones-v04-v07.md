@@ -1,6 +1,8 @@
-# Plan técnico v0.4–v0.7
+# Plan técnico v0.4–v0.7 — Histórico, pendiente de replanificación
 
-Estado: **plan propuesto y aprobado conceptualmente**; los hitos son metas, no prestaciones publicadas. Fecha: 2026-10-11. Fuente de verdad de arquitectura: `arquitectura-v2.md`.
+**AVISO (2026-10-12):** el orden de hitos de este plan quedó **en revisión** por [Arquitectura v3](arquitectura-v3.md) y [ADR-0001](decisiones/ADR-0001-escena-geometria-intencion.md). Prioridad nueva: editor de escena 2D y baseline Franjas antes de retomar conexiones complejas. Conservar este archivo sin reescribir su historia; preparar un nuevo plan detallado después de aprobar v3. La v0.4 conectada no pasó el criterio visual: caída de IoU 84,2 % → 38,3 % → 34,5 %.
+
+Estado original: **plan propuesto y aprobado conceptualmente**; los hitos son metas, no prestaciones publicadas. Fecha: 2026-10-11. Fuente de verdad de arquitectura: `arquitectura-v2.md`.
 
 ## Línea base: v0.3 experimental
 
