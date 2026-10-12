@@ -53,3 +53,15 @@ export function compareCanvasMasks(referenceCtx,resultCtx){
  }
  return {iou:union?inter/union:1,error:difference/(a.width*a.height)};
 }
+
+/** Render the desired shadow at its physical scale on the SAME receiver plane as the mesh.
+ * The target image describes the desired receiver-plane shadow, not a mask at objectZ.
+ */
+export function drawTargetOnReceiver(ctx,targetCanvas,{targetSizeMm=180,receiverSizeMm=300}={}){
+ if(!(targetSizeMm>0&&receiverSizeMm>0))throw new Error('Dimensiones físicas inválidas');
+ const {width,height}=ctx.canvas;
+ ctx.fillStyle='white';ctx.fillRect(0,0,width,height);
+ const rendered=targetSizeMm/receiverSizeMm*Math.min(width,height);
+ // Explicit physical correspondence: centred desired shadow at z=0.
+ ctx.drawImage(targetCanvas,(width-rendered)/2,(height-rendered)/2,rendered,rendered);
+}
