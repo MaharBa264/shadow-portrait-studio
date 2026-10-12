@@ -1,6 +1,8 @@
-# Contrato de arquitectura v2 — Shadow Portrait Studio
+# Arquitectura v2 — Contrato histórico de Shadow Portrait Studio
 
-Estado: **decisión de diseño**, no declaración de implementación. Fecha: 2026-10-11. Idioma de producto: **español**. Nombre propio del producto: Shadow Portrait Studio.
+**Estado actual: histórico.** Sustituido por [Arquitectura v3](arquitectura-v3.md) y [ADR-0001](decisiones/ADR-0001-escena-geometria-intencion.md). Conservar para trazabilidad; no utilizar como prioridad vigente sin revisar v3.
+
+Estado original: **decisión de diseño**, no declaración de implementación. Fecha: 2026-10-11. Idioma de producto: **español**. Nombre propio del producto: Shadow Portrait Studio.
 
 ## 1. Propósito y definición de éxito
 
