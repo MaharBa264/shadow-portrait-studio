@@ -33,7 +33,12 @@ export function scoreMasks(aCtx,bCtx){
 }
 export function diagnoseStages(stages,reference){
  const results=stages.map(stage=>stage?scoreMasks(reference,stage):null);
- let firstLoss=null;
- for(let i=0;i<results.length;i++)if(results[i]&&i>0&&results[i-1]&&results[i].iou+0.08<results[i-1].iou){firstLoss=i;break;}
- return {results,firstLoss};
+ let firstLoss=null,largestLoss=null,maxDrop=0;
+ for(let i=1;i<results.length;i++){
+  if(!results[i]||!results[i-1])continue;
+  const drop=results[i-1].iou-results[i].iou;
+  if(drop>0.08&&firstLoss===null)firstLoss=i;
+  if(drop>maxDrop){maxDrop=drop;largestLoss=i;}
+ }
+ return {results,firstLoss,largestLoss,maxDrop};
 }
