@@ -21,7 +21,7 @@ export function generateLineBars(pixels, width, height, scene, {rows=60, thickne
      const xb=lightX+((ix/width-.5)*receiverSizeMm-lightX)*k;
      const wy=(.5-(iy+.5)/height)*receiverSizeMm;
      const y=lightY+(wy-lightY)*k;
-     bars.push({a:[xa,y,z],b:[xb,y,z],thicknessMm});
+     bars.push({a:[xa+objectX,y,z],b:[xb+objectX,y,z],thicknessMm});
     }
     run=-1;
    }
