@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {boundsOf, drawMeshShadow} from '../src/mesh-view.js';
+import {boundsOf, drawMeshShadow,drawTargetOnReceiver} from '../src/mesh-view.js';
 test('mesh bounding box is correct',()=> {
  const b=boundsOf({vertices:[[0,2,4],[10,12,14]],faces:[]});
  assert.deepEqual(b.min,[0,2,4]); assert.deepEqual(b.max,[10,12,14]);
@@ -16,4 +16,16 @@ test('solid triangles draw through face projection',()=>{
  const ctx={canvas:{width:12,height:12},fillRect(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){triangles++;}};
  drawMeshShadow(ctx,{vertices:[[0,0,10],[10,0,10],[0,10,10]],faces:[[0,1,2]]},{lightZ:300});
  assert.equal(triangles,1);
+});
+
+test('target reference is drawn at its physical receiver size',()=>{
+ const calls=[];
+ const ctx={canvas:{width:400,height:400},fillRect(){},drawImage(...args){calls.push(args);}};
+ drawTargetOnReceiver(ctx,{id:'target'},{targetSizeMm:100,receiverSizeMm:200});
+ assert.equal(calls.length,1);
+ assert.deepEqual(calls[0].slice(1),[100,100,200,200]);
+});
+test('invalid receiver dimensions rejected',()=>{
+ const ctx={canvas:{width:400,height:400},fillRect(){},drawImage(){}};
+ assert.throws(()=>drawTargetOnReceiver(ctx,{}, {targetSizeMm:180,receiverSizeMm:0}));
 });
