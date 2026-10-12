@@ -32,3 +32,14 @@ Agrupar todos los trazos de sombra mediante puentes a un eje lateral ubicado fue
 ## Siguiente experimento
 
 Proyectar juntas barras y puentes para medir cuánto error produce la columna externa. Adaptar el anclaje para mantener los puentes fuera del plano receptor visible. Después, construir una malla tubular verdaderamente fusionada y verificarla.
+
+## Experimento adicional — unión volumétrica discretizada
+
+**Estado:** implementado en código de la rama, pruebas escritas pero **no ejecutadas/verificadas en esta sesión**.
+
+- `src/voxel-mesh.js`: rellena vóxeles alrededor de segmentos, extrae solo caras exteriores, produce triángulos orientados y STL ASCII.
+- Diagnósticos: componentes de ocupación (adyacencia de 6 vecinos), bordes de malla con incidencia distinta de 2, límite de 2,5 millones de vóxeles para acotar memoria.
+- `tests/voxel-mesh.test.mjs`: casos de tubo único, piezas separadas, unión en codo y límite de memoria.
+- Interfaz de la rama: controles de resolución, botón de fusión y descarga solo cuando el diagnóstico preliminar da un componente y aristas pareadas.
+
+**Advertencias:** una superficie voxelizada puede ser cerrada y tener todavía problemas de fabricación, orientación, estabilidad o uniones delgadas. El proceso puede bloquear brevemente la interfaz al ser síncrono; moverlo a Web Worker es pendiente. Las superficies de vóxel presentan escalones visibles. La vista 3D sigue esquemática y no representa la malla fusionada. El método aún no evalúa la sombra de la malla sólida; el STL no debe considerarse listo para imprimir.
