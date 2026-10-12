@@ -1,28 +1,47 @@
 # Shadow Portrait Studio
 
-Open-source, browser-based experimental tool to turn images into shadow sculptures for 3D printing.
+**Generador experimental, gratuito y de código abierto de esculturas que proyectan sombras artísticas.**
 
-## Status
+🌐 [Abrir aplicación](https://shadow-portrait-studio.pages.dev/)
 
-**v0.3 experimental prototype:** image upload, grayscale/threshold preview, mode selector (line/volume), configuration export. The v0.2 reference projection uses an **ideal opaque flat mask** and a calibrated point source; it is not a sculpture preview. An experimental inverse-projected 3D scanline filament generator and ASCII STL export are now available. **Its bars are disconnected: STLs are NOT print-ready.** Connected geometry, physically realistic finite-emitter shadows, and physical print validation are still pending.
+## Estado del proyecto
 
-## Run locally
+**Versión de código conocida: v0.3 experimental.** La aplicación permite cargar una imagen, ajustar contraste y umbral, configurar una luz puntual de referencia y generar barras tridimensionales experimentales, visualizarlas de forma esquemática y exportar un STL ASCII. **Las barras están desconectadas; el STL NO está validado para impresión.** El modo de volumen y los modos guiados por segunda imagen o malla 3D aún no están implementados.
 
-Open `index.html` in a modern browser, or serve the folder using any static HTTP server.
+**Observación del usuario:** la sombra y la proyección de v0.3 se ven razonablemente bien; el objeto no tiene todavía una forma escultórica convincente. No hay impresión física documentada ni prueba de validación geométrica final.
 
-## Tests
+## Contrato de idioma
 
-Run `npm test` with Node.js 20+ to check the projection mathematics. (No build or dependencies required.)
+El nombre propio **Shadow Portrait Studio** se mantiene en inglés. **Toda la experiencia de usuario y la documentación se redactarán en español**, incluidos los nombres de modos y mensajes. Los identificadores de código o bibliotecas externas pueden usar inglés. Algunos textos de la interfaz actual aún están pendientes de revisión.
 
-## Modes (planned)
+## Modos definidos en la arquitectura (todavía no implementados por completo)
 
-- **Lines:** continuous-filament shadow sculpture.
-- **Volume:** voxel/mesh-based abstract shadow sculpture.
+1. **Escultura libre:** estilo ordenado, geométrico, orgánico, caótico, minimalista o ramificado.
+2. **Escultura guiada por imagen:** la segunda imagen inspira la forma del objeto; la primera determina la sombra.
+3. **Escultura guiada por modelo 3D:** un modelo simple sirve de referencia para modificar la forma y aproximar la sombra.
 
-Both will share a target shadow definition, a calibrated lighting scene, geometry validation and STL export.
+Los motores **Filamentos** y **Volumen** son representaciones geométricas independientes de los tres modos anteriores.
 
-See `docs/architecture.md` for the roadmap.
+## Contratos y documentación
 
-## License
+- [Arquitectura v2 — contrato técnico vigente](docs/arquitectura-v2.md)
+- [Plan técnico y pruebas v0.4–v0.7](docs/plan-versiones-v04-v07.md)
+- [Contrato vivo de documentación](docs/contrato-documentacion.md)
+- [Arquitectura fundacional v0.1 — documento histórico](docs/architecture.md)
 
-MIT.
+**Regla:** cada decisión o implementación relevante deberá reflejarse en Markdown dentro de este repositorio, con estado y evidencia. No confundir código escrito, compilación, validación geométrica ni verificación física.
+
+## Ejecución local
+
+Requiere un navegador moderno. Puede servirse el repositorio como sitio estático. Con Node.js 20 o superior:
+
+```sh
+npm test
+npm run build
+```
+
+La compilación genera `dist/`, directorio de salida de Cloudflare Pages. Se utiliza `main` como rama de producción.
+
+## Licencia
+
+MIT. Consultar [LICENSE](LICENSE).
