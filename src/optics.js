@@ -33,7 +33,7 @@ export function renderFlatMaskShadow(targetPixels, width, height, scene, receive
     for (let px = 0; px < receiverPixels; px++) {
       const x = ((px + 0.5) / receiverPixels - 0.5) * receiverSizeMm;
       const [ox, oy] = receiverToObject(x, y, scene);
-      const ix = Math.floor((ox / objectSizeMm + 0.5) * width);
+      const ix = Math.floor(((ox - (scene.objectX ?? 0)) / objectSizeMm + 0.5) * width);
       const iy = Math.floor((0.5 - oy / objectSizeMm) * height);
       const o = (py * receiverPixels + px) * 4;
       const inside = ix >= 0 && ix < width && iy >= 0 && iy < height;
